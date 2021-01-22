@@ -3,7 +3,7 @@
  <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
   <asx:values>
    <PROGDIR>
-    <NAME>ZIOT_R_FOOBAR</NAME>
+    <NAME>/SCMB/R_FOOBAR</NAME>
     <SUBC>1</SUBC>
     <RLOAD>D</RLOAD>
     <FIXPT>X</FIXPT>
@@ -15,7 +15,7 @@
      <TEXTPOOL>
       <item>
        <ID>R</ID>
-       <ENTRY>ZIOT_R_FOOBAR</ENTRY>
+       <ENTRY>/SCMB/R_FOOBAR</ENTRY>
        <LENGTH>7</LENGTH>
       </item>
      </TEXTPOOL>

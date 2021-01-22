@@ -2,10 +2,15 @@ import re
 import os
 import sys
 import fileinput
+import shutil
 
 pathToGitFolder = input("Pfad zum Git-Ordner: ") + "\src"
 oldNamespace = input("Alter Namensraum: ")
 newNamespace = input("Neuer Namensraum: ")
+
+while not os.path.isdir(pathToGitFolder):
+    print("Angegebener Ordner existiert nicht oder ist kein abapGit-Repo.")
+    pathToGitFolder = input("Pfad zum Git-Ordner: ") + "\src"
 
 oldNamespace = oldNamespace.replace('/', '#').lower()
 newNamespace = newNamespace.replace('/', '#').lower()
@@ -13,25 +18,53 @@ newNamespace = newNamespace.replace('/', '#').lower()
 files = []
 for r, d, f in os.walk(pathToGitFolder):
     for file in f:
-        files.append([r, file])
-        if "test.txt" in file:
-            filePath = os.path.join(r, file)
-            for i, line in enumerate(fileinput.input(filePath, inplace=1)):
-                sys.stdout.write(line.replace(oldNamespace, newNamespace)) # replace
+        if not re.search(rf'(?i)\.bak', file):
+            filePath = r
+            fileSegments = re.search(r'^([\w#]+)(\..+)$',file)
+            fileName = fileSegments.group(1)
+            fileExtension = fileSegments.group(2)
+            files.append([filePath, fileName, fileExtension])
 
+print('1) Renaming files...')
 for file in files:
-    filepath = file[0]
-    filename = file[1]
-    
-    if re.search(rf'(?i){oldNamespace}', filename):
-       newFilename = file.replace(oldNamespace, newNamespace)
-       print(rf"Rename file {file} to {newFilename}")
-       
-       # Rename file
-       newFilepath = os.path.join(file[0], newFilename)
-       os.rename(filepath, newFilepath)
+    filePath = file[0]
+    fileName = file[1]
+    fileExtension = file[2]
+    newFilename = ''
 
-       # Rename occurences within files
-       for file2 in files:
-            for i, line in enumerate(fileinput.input(file2, inplace=1)):
-                sys.stdout.write(line.replace(oldNamespace, newNamespace)) # replace
+    if re.search(rf'(?i){oldNamespace}', fileName):
+        newFilename = fileName.replace(oldNamespace, newNamespace)
+
+        oldFilepath = os.path.join(filePath, fileName + fileExtension)
+        newFilepath = os.path.join(filePath, newFilename + fileExtension)
+        if shutil.move(oldFilepath, newFilepath):
+            file[1] = newFilename
+            print(rf'{fileName} => {newFilename}')
+        else:
+            print(rf'Error: {fileName} => {newFilename}')
+        
+    elif re.search(rf'(?i){newNamespace}', fileName):
+        newFilename = fileName
+
+# Rename occurences within files
+print('2) Renaming occurrences within files...')
+for file in files:
+    if not newFilename:
+        newFilename = fileName
+
+    objectName = fileName.replace(newNamespace, oldNamespace).replace('#', '/').upper()
+    newObjectName = newFilename.replace('#', '/').upper()
+    for file2 in files:
+        filePath = os.path.join(file2[0], file2[1] + file2[2])
+        print(rf'Search in {filePath}...')
+        if os.path.exists(filePath):
+            #for i, line in enumerate(fileinput.input(filePath, inplace=1)):
+            with open (filePath, 'r+' ) as f:
+                content = f.read()
+                content_new = re.sub(r'(?i){objectName}', newObjectName, content, flags = re.MULTILINE)
+                f.seek(0)
+                f.write(content_new)
+                f.truncate()
+                #sys.stdout.write(line.replace(objectName, newObjectName)) # replace
+
+print('Done.')

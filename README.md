@@ -11,4 +11,4 @@ Python script to rename multiple development objects based on an abapGit reposit
 6. Enter new namespace, e.g. "/SCWM/"
 
 ## Exclude objects from renaming
-To avoid objects to be renamed unintended add their names semicolon-separated to file 'exclude.csv'
+To avoid objects to be renamed unintended add their names semicolon-separated to file 'exclude.csv'. Be aware that these files are being searched nonetheless for occurrences of objects still to be renamed.

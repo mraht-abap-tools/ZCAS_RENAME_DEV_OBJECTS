@@ -18,7 +18,7 @@ newNamespace = newNamespace.replace('/', '#').lower()
 files = []
 for r, d, f in os.walk(pathToGitFolder):
     for file in f:
-        if not re.search(rf'(?i)\.bak', file):
+        if not re.search(rf'(?i)\.bak', file) and (re.search(rf'(?i){oldNamespace}', file) or re.search(rf'(?i){newNamespace}', file)):
             filePath = r
             fileSegments = re.search(r'^([\w#]+)(\..+)$',file)
             fileName = fileSegments.group(1)
@@ -49,22 +49,17 @@ for file in files:
 # Rename occurences within files
 print('2) Renaming occurrences within files...')
 for file in files:
-    if not newFilename:
-        newFilename = fileName
-
-    objectName = fileName.replace(newNamespace, oldNamespace).replace('#', '/').upper()
-    newObjectName = newFilename.replace('#', '/').upper()
+    oldObjectName = file[1].replace(newNamespace, oldNamespace).replace('#', '/').upper()
+    newObjectName = file[1].replace(oldNamespace, newNamespace).replace('#', '/').upper()
     for file2 in files:
         filePath = os.path.join(file2[0], file2[1] + file2[2])
         print(rf'Search in {filePath}...')
         if os.path.exists(filePath):
-            #for i, line in enumerate(fileinput.input(filePath, inplace=1)):
             with open (filePath, 'r+' ) as f:
                 content = f.read()
-                content_new = re.sub(r'(?i){objectName}', newObjectName, content, flags = re.MULTILINE)
+                content_new = re.sub(rf'(?i){oldObjectName}', newObjectName, content, flags = re.MULTILINE)
                 f.seek(0)
                 f.write(content_new)
                 f.truncate()
-                #sys.stdout.write(line.replace(objectName, newObjectName)) # replace
 
 print('Done.')

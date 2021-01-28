@@ -1,7 +1,6 @@
-import re
+import csv
 import os
-import sys
-import fileinput
+import re
 import shutil
 
 pathToGitFolder = input("Path to abapGit repo: ") + "\\src"
@@ -12,22 +11,35 @@ while not os.path.isdir(pathToGitFolder):
     print("Entered folder doesn't exist.")
     pathToGitFolder = input("Path to abapGit repo: ") + "\\src"
 
+excludedObjectsFile = open('exclude.csv', 'r')
+excludedObjects = excludedObjectsFile.read()
+excludedObjectsFile.close()
+
 oldNamespace = oldNamespace.replace('/', '#').lower()
 newNamespace = newNamespace.replace('/', '#').lower()
 
 print('1) Determine relevant files...')
 files = []
+filesToRename = []
+
 for r, d, f in os.walk(pathToGitFolder):
     for file in f:
-        if not re.search(rf'(?i)\.bak', file) and (re.search(rf'(?i){oldNamespace}', file) or re.search(rf'(?i){newNamespace}', file)):
+        if not re.search(rf'(?i)\.bak', file) and re.search(rf'(?i)({oldNamespace}|{newNamespace})', file):
             filePath = r
             fileSegments = re.search(r'^([\w#]+)(\..+)$',file)
             fileName = fileSegments.group(1)
             fileExtension = fileSegments.group(2)
             files.append([filePath, fileName, fileExtension])
 
+            newFilename = fileName.replace(oldNamespace, newNamespace)
+
+            if not (re.search(rf'(?i)({fileName}|{newFilename})', excludedObjects)):
+                filesToRename.append([filePath, fileName, fileExtension])
+            else:
+                print(rf'Exclude {fileName} and {newFilename}')
+
 print('2) Renaming files...')
-for file in files:
+for file in filesToRename:
     filePath = file[0]
     fileName = file[1]
     fileExtension = file[2]
@@ -48,7 +60,7 @@ for file in files:
         newFilename = fileName
 
 print('3) Renaming occurrences within files...')
-for file in files:
+for file in filesToRename:
     oldObjectName = file[1].replace(newNamespace, oldNamespace).replace('#', '/').upper()
     newObjectName = file[1].replace(oldNamespace, newNamespace).replace('#', '/').upper()
     for file2 in files:

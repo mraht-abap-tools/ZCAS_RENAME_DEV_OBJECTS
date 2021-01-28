@@ -93,4 +93,4 @@ for file in filesToRename:
 
 info('Executed successfully.')
 
-input('Press any key to exit')
+input('Press any key to exit...')

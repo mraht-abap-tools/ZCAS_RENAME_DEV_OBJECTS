@@ -1,10 +1,10 @@
 *&---------------------------------------------------------------------*
-*& Report ZIOT_R_FOOBAR
+*& Report ZCAS_R_FOOBAR
 *&---------------------------------------------------------------------*
 *&
 *&---------------------------------------------------------------------*
-REPORT ZIOT_R_FOOBAR.
+REPORT ZCAS_R_FOOBAR.
 
-SELECT * FROM ZIOT_T_TEST INTO TABLE DATA(lt_test_data).
+SELECT * FROM ZCAS_T_TEST INTO TABLE DATA(lt_test_data).
 
 BREAK-POINT.

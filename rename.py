@@ -1,7 +1,17 @@
 import csv
+import logging
 import os
 import re
 import shutil
+import sys
+
+def info(msg):
+    logging.info(msg)
+    print(msg)
+
+def error(msg):
+    logging.error(msg)
+    print(msg)
 
 pathToGitFolder = input("Path to abapGit repo: ") + "\\src"
 while not os.path.isdir(pathToGitFolder):
@@ -10,6 +20,11 @@ while not os.path.isdir(pathToGitFolder):
 oldNamespace = input("Old namespace: ")
 newNamespace = input("New namespace: ")
 
+logging.basicConfig(level=logging.DEBUG, filename="log.txt", filemode="a+",
+                    format="%(asctime)-15s %(levelname)-8s %(message)s")
+
+info('****************************************************************************************************')
+
 excludedObjectsFile = open('exclude.csv', 'r')
 excludedObjects = excludedObjectsFile.read()
 excludedObjectsFile.close()
@@ -17,7 +32,7 @@ excludedObjectsFile.close()
 oldNamespace = oldNamespace.replace('/', '#').lower()
 newNamespace = newNamespace.replace('/', '#').lower()
 
-print('1) Determine relevant files...')
+info('1) Determine relevant files...')
 files = []
 filesToRename = []
 
@@ -34,11 +49,11 @@ for r, d, f in os.walk(pathToGitFolder):
                 filesToRename.append([filePath, fileName, fileExtension])
             else:
                 newFilename = fileName
-                print(rf'Exclude {fileName} and {newFilename} from renaming')
+                info(rf'Exclude {fileName} and {newFilename} from renaming')
 
             files.append([filePath, newFilename, fileExtension])
 
-print('2) Renaming files...')
+info('2) Renaming files...')
 for file in filesToRename:
     filePath = file[0]
     fileName = file[1]
@@ -52,26 +67,30 @@ for file in filesToRename:
         newFilepath = os.path.join(filePath, newFilename + fileExtension)
         if shutil.move(oldFilepath, newFilepath):
             file[1] = newFilename
-            print(rf'{fileName} => {newFilename}')
+            info(rf'{fileName} => {newFilename}')
         else:
-            print(rf'Error: {fileName} => {newFilename}')
+            error(rf'Error: Renaming {fileName} to {newFilename} failed.')
         
     elif re.search(rf'(?i){newNamespace}', fileName):
         newFilename = fileName
 
-print('3) Renaming occurrences within files...')
+info('3) Renaming occurrences within files...')
 for file in filesToRename:
     oldObjectName = file[1].replace(newNamespace, oldNamespace).replace('#', '/').upper()
     newObjectName = file[1].replace(oldNamespace, newNamespace).replace('#', '/').upper()
     for file2 in files:
         filePath = os.path.join(file2[0], file2[1] + file2[2])
-        print(rf'Search for {oldObjectName} in {filePath}...')
+        info(rf'Search for {oldObjectName} in {filePath}...')
         if os.path.exists(filePath):
             with open (filePath, 'r+' ) as f:
                 content = f.read()
                 content_new = re.sub(rf'(?i){oldObjectName}', newObjectName, content, flags = re.MULTILINE)
-                f.seek(0)
-                f.write(content_new)
-                f.truncate()
+                if content != content_new:
+                    info(rf'Occurrences of {oldObjectName} replaced by {newObjectName} in {filePath}')
+                    f.seek(0)
+                    f.write(content_new)
+                    f.truncate()
+
+info('Executed successfully.')
 
 input('Press any key to exit')

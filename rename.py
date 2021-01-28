@@ -4,12 +4,11 @@ import re
 import shutil
 
 pathToGitFolder = input("Path to abapGit repo: ") + "\\src"
-oldNamespace = input("Old namespace: ")
-newNamespace = input("New namespace: ")
-
 while not os.path.isdir(pathToGitFolder):
     print("Entered folder doesn't exist.")
     pathToGitFolder = input("Path to abapGit repo: ") + "\\src"
+oldNamespace = input("Old namespace: ")
+newNamespace = input("New namespace: ")
 
 excludedObjectsFile = open('exclude.csv', 'r')
 excludedObjects = excludedObjectsFile.read()
@@ -29,14 +28,15 @@ for r, d, f in os.walk(pathToGitFolder):
             fileSegments = re.search(r'^([\w#]+)(\..+)$',file)
             fileName = fileSegments.group(1)
             fileExtension = fileSegments.group(2)
-            files.append([filePath, fileName, fileExtension])
 
             newFilename = fileName.replace(oldNamespace, newNamespace)
-
             if not (re.search(rf'(?i)({fileName}|{newFilename})', excludedObjects)):
                 filesToRename.append([filePath, fileName, fileExtension])
             else:
+                newFilename = fileName
                 print(rf'Exclude {fileName} and {newFilename} from renaming')
+
+            files.append([filePath, newFilename, fileExtension])
 
 print('2) Renaming files...')
 for file in filesToRename:

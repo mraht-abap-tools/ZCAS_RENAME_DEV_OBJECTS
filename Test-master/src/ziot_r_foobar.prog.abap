@@ -5,4 +5,6 @@
 *&---------------------------------------------------------------------*
 REPORT ZIOT_R_FOOBAR.
 
+SELECT * FROM ZIOT_T_TEST INTO TABLE DATA(lt_test_data).
+
 BREAK-POINT.

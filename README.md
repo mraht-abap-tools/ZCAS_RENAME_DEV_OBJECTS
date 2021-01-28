@@ -6,3 +6,4 @@
 4. Pfad zum abapGit-Repository angeben, z. B. "D:\Downloads\ZCAS_RENAME_DEV_OBJECTS\Test-master"
 5. Alten Namensraum eingeben, z. B. "ZIOT_"
 6. Neuen Namensraum eingeben, z. B. "/SCWM/"
+7. (optional) Ist der angegebene Pfad nicht vorhanden, wird der Anwender wiederholt aufgefordert den Pfad zum abapGit-Repository anzugeben

@@ -48,8 +48,8 @@ for r, d, f in os.walk(pathToGitFolder):
             if not (re.search(rf'(?i)({fileName}|{newFilename})', excludedObjects)):
                 filesToRename.append([filePath, fileName, fileExtension])
             else:
-                newFilename = fileName
                 info(rf'Exclude {fileName} and {newFilename} from renaming')
+                newFilename = fileName
 
             files.append([filePath, newFilename, fileExtension])
 

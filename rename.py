@@ -4,17 +4,18 @@ import sys
 import fileinput
 import shutil
 
-pathToGitFolder = input("Pfad zum Git-Ordner: ") + "\src"
-oldNamespace = input("Alter Namensraum: ")
-newNamespace = input("Neuer Namensraum: ")
+pathToGitFolder = input("Path to abapGit repo: ") + "\\src"
+oldNamespace = input("Old namespace: ")
+newNamespace = input("New namespace: ")
 
 while not os.path.isdir(pathToGitFolder):
-    print("Angegebener Ordner existiert nicht oder ist kein abapGit-Repo.")
-    pathToGitFolder = input("Pfad zum Git-Ordner: ") + "\src"
+    print("Entered folder doesn't exist.")
+    pathToGitFolder = input("Path to abapGit repo: ") + "\\src"
 
 oldNamespace = oldNamespace.replace('/', '#').lower()
 newNamespace = newNamespace.replace('/', '#').lower()
 
+print('1) Determine relevant files...')
 files = []
 for r, d, f in os.walk(pathToGitFolder):
     for file in f:
@@ -25,7 +26,7 @@ for r, d, f in os.walk(pathToGitFolder):
             fileExtension = fileSegments.group(2)
             files.append([filePath, fileName, fileExtension])
 
-print('1) Renaming files...')
+print('2) Renaming files...')
 for file in files:
     filePath = file[0]
     fileName = file[1]
@@ -46,14 +47,13 @@ for file in files:
     elif re.search(rf'(?i){newNamespace}', fileName):
         newFilename = fileName
 
-# Rename occurences within files
-print('2) Renaming occurrences within files...')
+print('3) Renaming occurrences within files...')
 for file in files:
     oldObjectName = file[1].replace(newNamespace, oldNamespace).replace('#', '/').upper()
     newObjectName = file[1].replace(oldNamespace, newNamespace).replace('#', '/').upper()
     for file2 in files:
         filePath = os.path.join(file2[0], file2[1] + file2[2])
-        print(rf'Search in {filePath}...')
+        print(rf'Search for {oldObjectName} in {filePath}...')
         if os.path.exists(filePath):
             with open (filePath, 'r+' ) as f:
                 content = f.read()
@@ -62,4 +62,4 @@ for file in files:
                 f.write(content_new)
                 f.truncate()
 
-print('Done.')
+input('Press any key to exit')

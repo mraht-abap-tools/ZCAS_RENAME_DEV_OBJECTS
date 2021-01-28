@@ -25,12 +25,16 @@ logging.basicConfig(level=logging.DEBUG, filename="log.txt", filemode="a+",
 
 info('****************************************************************************************************')
 
+# TODO:
+# > TEST: Funktioniert exclude.csv mit /SCWM/?
+# > TEST: Darf nur ausschließen, wenn bestehende Dateien in exclude.csv drinstehen
 excludedObjectsFile = open('exclude.csv', 'r')
 excludedObjects = excludedObjectsFile.read()
 excludedObjectsFile.close()
+excludedObjects.replace('#', '/').upper()
 
-oldNamespace = oldNamespace.replace('/', '#').lower()
-newNamespace = newNamespace.replace('/', '#').lower()
+oldNamespace = oldNamespace.replace('/', '#').upper()
+newNamespace = newNamespace.replace('/', '#').upper()
 
 info('1) Determine relevant files...')
 files = []
@@ -45,7 +49,7 @@ for r, d, f in os.walk(pathToGitFolder):
             fileExtension = fileSegments.group(2)
 
             newFilename = fileName.replace(oldNamespace, newNamespace)
-            if not (re.search(rf'(?i)({fileName}|{newFilename})', excludedObjects)):
+            if not (re.search(rf'(?i){fileName}', excludedObjects)):
                 filesToRename.append([filePath, fileName, fileExtension])
             else:
                 info(rf'Exclude {fileName} and {newFilename} from renaming')

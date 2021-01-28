@@ -1,9 +1,10 @@
 # ZCAS_RENAME_DEV_OBJECTS
 
-1. Repository klonen/herunterladen
-2. <a href="https://www.python.org/downloads/" target="_blank">Python</a> installieren (>= 3.9.1)
-3. rename.py per Doppelklick starten (ggf. mit Python öffnen auswählen)
-4. Pfad zum abapGit-Repository angeben, z. B. "D:\Downloads\ZCAS_RENAME_DEV_OBJECTS\Test-master"
-5. Alten Namensraum eingeben, z. B. "ZIOT_"
-6. Neuen Namensraum eingeben, z. B. "/SCWM/"
-7. (optional) Ist der angegebene Pfad nicht vorhanden, wird der Anwender wiederholt aufgefordert den Pfad zum abapGit-Repository anzugeben
+Python script to rename multiple development objects based on an abapGit repository.
+
+1. Clone or copy repository
+2. Install <a href="https://www.python.org/downloads/" target="_blank">Python</a> (>= 3.9.1)
+3. Execute rename.py by double click (if necessary choose Python to open the file)
+4. Enter path to abapGit-Repository, e.g. "D:\Downloads\ZCAS_RENAME_DEV_OBJECTS\Test-master"
+5. Enter old namespace, e.g. "ZIOT_"
+6. Enter new namespace, e.g. "/SCWM/"

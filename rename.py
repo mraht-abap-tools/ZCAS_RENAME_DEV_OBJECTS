@@ -1,3 +1,5 @@
+# Version: 29.01.2021-001
+
 import csv
 import logging
 import os

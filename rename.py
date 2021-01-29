@@ -15,7 +15,7 @@ def error(msg):
 
 pathToGitFolder = input("Path to abapGit repo: ") + "\\src"
 while not os.path.isdir(pathToGitFolder):
-    print("Entered folder doesn't exist.")
+    print("Entered folder doesn't exist or isn't an abapGit repository.")
     pathToGitFolder = input("Path to abapGit repo: ") + "\\src"
 oldNamespace = input("Old namespace: ")
 newNamespace = input("New namespace: ")
@@ -25,16 +25,14 @@ logging.basicConfig(level=logging.DEBUG, filename="log.txt", filemode="a+",
 
 info('****************************************************************************************************')
 
-# TODO:
-# > TEST: Funktioniert exclude.csv mit /SCWM/?
-# > TEST: Darf nur ausschließen, wenn bestehende Dateien in exclude.csv drinstehen
+# Consider excluded files/development objects
 excludedObjectsFile = open('exclude.csv', 'r')
 excludedObjects = excludedObjectsFile.read()
 excludedObjectsFile.close()
-excludedObjects.replace('#', '/').upper()
+excludedObjects = excludedObjects.replace('/', '#').upper()
 
-oldNamespace = oldNamespace.replace('/', '#').upper()
-newNamespace = newNamespace.replace('/', '#').upper()
+oldNamespace = oldNamespace.replace('/', '#').lower()
+newNamespace = newNamespace.replace('/', '#').lower()
 
 info('1) Determine relevant files...')
 files = []
@@ -48,7 +46,7 @@ for r, d, f in os.walk(pathToGitFolder):
             fileName = fileSegments.group(1)
             fileExtension = fileSegments.group(2)
 
-            newFilename = fileName.replace(oldNamespace, newNamespace)
+            newFilename = re.sub(rf'(?i){oldNamespace}', newNamespace, fileName)
             if not (re.search(rf'(?i){fileName}', excludedObjects)):
                 filesToRename.append([filePath, fileName, fileExtension])
             else:
@@ -65,7 +63,7 @@ for file in filesToRename:
     newFilename = ''
 
     if re.search(rf'(?i){oldNamespace}', fileName):
-        newFilename = fileName.replace(oldNamespace, newNamespace)
+        newFilename = re.sub(rf'(?i){oldNamespace}', newNamespace, fileName)
 
         oldFilepath = os.path.join(filePath, fileName + fileExtension)
         newFilepath = os.path.join(filePath, newFilename + fileExtension)
@@ -80,20 +78,25 @@ for file in filesToRename:
 
 info('3) Renaming occurrences within files...')
 for file in filesToRename:
-    oldObjectName = file[1].replace(newNamespace, oldNamespace).replace('#', '/').upper()
-    newObjectName = file[1].replace(oldNamespace, newNamespace).replace('#', '/').upper()
-    for file2 in files:
-        filePath = os.path.join(file2[0], file2[1] + file2[2])
-        info(rf'Search for {oldObjectName} in {filePath}...')
-        if os.path.exists(filePath):
-            with open (filePath, 'r+' ) as f:
-                content = f.read()
-                content_new = re.sub(rf'(?i){oldObjectName}', newObjectName, content, flags = re.MULTILINE)
-                if content != content_new:
-                    info(rf'Occurrences of {oldObjectName} replaced by {newObjectName} in {filePath}')
-                    f.seek(0)
-                    f.write(content_new)
-                    f.truncate()
+    # Each development object has a xml file. Some files just contain e.g. source code instead of
+    # metadata of a development object. Thus no search for occurrences of these development objects
+    # are necessary because the search is being done with the related xml file.
+    if (re.search(rf'(?i).xml$', file[2])):
+        oldObjectName = re.sub(rf'(?i){newNamespace}', oldNamespace, file[1]).replace('#', '/').upper()
+        newObjectName = re.sub(rf'(?i){oldNamespace}', newNamespace, file[1]).replace('#', '/').upper()
+        info(rf'Search for {oldObjectName}...')
+        for file2 in files:
+            filePath = os.path.join(file2[0], file2[1] + file2[2])
+            info(rf'> {filePath}')
+            if os.path.exists(filePath):
+                with open (filePath, 'r+' ) as f:
+                    content = f.read()
+                    content_new = re.sub(rf'(?i){oldObjectName}', newObjectName, content, flags = re.MULTILINE)
+                    if content != content_new:
+                        info(rf'>> Occurrences of {oldObjectName} replaced by {newObjectName} in {filePath}')
+                        f.seek(0)
+                        f.write(content_new)
+                        f.truncate()
 
 info('Executed successfully.')
 

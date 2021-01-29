@@ -1,10 +1,10 @@
 *&---------------------------------------------------------------------*
-*& Report ZCAS_R_FOOBAR
+*& Report /SCWM/R_FOOBAR
 *&---------------------------------------------------------------------*
 *&
 *&---------------------------------------------------------------------*
-REPORT ZCAS_R_FOOBAR.
+REPORT /SCWM/R_FOOBAR.
 
-SELECT * FROM ZCAS_T_TEST INTO TABLE DATA(lt_test_data).
+SELECT * FROM /SCWM/T_TEST INTO TABLE DATA(lt_test_data).
 
 BREAK-POINT.

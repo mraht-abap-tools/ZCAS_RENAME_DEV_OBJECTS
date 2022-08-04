@@ -81,7 +81,6 @@ for file in filesToRename:
 
         try:
             shutil.move(oldFilepath, newFilepath)
-            os.remove(oldFilepath)
             file[1] = newFilename
             info(rf'{fileName}{fileExtension} => {newFilename}{fileExtension}')
         except BaseException:

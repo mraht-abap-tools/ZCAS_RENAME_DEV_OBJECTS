@@ -1,12 +1,9 @@
-# Version: 04.08.2022-001
+# Version: 18.10.2022-001
 
-import csv
 import logging
-from msilib.schema import Error
 import os
 import re
 import shutil
-import sys
 
 def info(msg):
     logging.info(msg)
@@ -15,6 +12,10 @@ def info(msg):
 def error(msg):
     logging.error(msg)
     print(msg)
+
+def replace(m):
+    newStr = re.sub(oldObjectName, newObjectName, m.group(), flags = re.IGNORECASE)
+    return newStr.lower() if m.group().islower() else newStr.upper()
 
 pathToGitFolder = input("Path to abapGit repo: ")
 while not os.path.isdir(pathToGitFolder + "\\src"):
@@ -120,7 +121,7 @@ for index1, file in enumerate(filesToRename):
                     except BaseException:
                         continue
 
-                    content_new = re.sub(rf'(?i){oldObjectName}', newObjectName, content, flags = re.MULTILINE)
+                    content_new = re.sub(rf'(?i){oldObjectName}', replace, content, flags = re.MULTILINE)
                     if content != content_new:
                         info(rf'>> Occurrences of {oldObjectName} replaced by {newObjectName} in {filePath}')
                         f.seek(0)

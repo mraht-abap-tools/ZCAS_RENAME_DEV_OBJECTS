@@ -14,7 +14,7 @@ def error(msg):
     print(msg)
 
 def replace(m):
-    newStr = re.sub(oldObjectName, newObjectName, m.group(), flags = re.IGNORECASE)
+    newStr = re.sub(oldNamespace, newNamespace, m.group(), flags = re.IGNORECASE)
     return newStr.lower() if m.group().islower() else newStr.upper()
 
 pathToGitFolder = input("Path to abapGit repo: ")
@@ -121,9 +121,9 @@ for index1, file in enumerate(filesToRename):
                     except BaseException:
                         continue
 
-                    content_new = re.sub(rf'(?i){oldObjectName}', replace, content, flags = re.MULTILINE)
+                    content_new = re.sub(rf'(?i){oldNamespace}', replace, content, flags = re.MULTILINE)
                     if content != content_new:
-                        info(rf'>> Occurrences of {oldObjectName} replaced by {newObjectName} in {filePath}')
+                        info(rf'>> Occurrences of {oldNamespace} replaced by {newNamespace} in {filePath}')
                         f.seek(0)
                         f.write(content_new)
                         f.truncate()

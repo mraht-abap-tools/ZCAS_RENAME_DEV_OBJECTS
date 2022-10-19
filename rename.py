@@ -94,7 +94,18 @@ for file in filesToRename:
     elif re.search(rf'(?i){newNamespace}', fileName):
         newFilename = fileName
 
-info('4) Renaming occurrences within files...')
+info('4) Renaming directories...')
+for filePath, dirnames, filenames in os.walk(newPathToGitFolder, topdown = False):
+    for dir in dirnames:
+        newDir = re.sub(rf'(?i){oldNamespace}', newNamespace, dir)
+        oldDirpath = os.path.join(filePath, dir)
+        newDirpath = os.path.join(filePath, newDir)        
+        try:
+            shutil.move(oldDirpath, newDirpath)
+        except BaseException:
+            error(rf'Error: Renaming {dir} to {newDir} failed.')
+
+info('5) Renaming occurrences within files...')
 
 for index, file in enumerate(files):
     print('%-50s' % file[1] + rf': {round((index / len(files)) * 100, 2)}%',"\r", end=' ')

@@ -38,8 +38,9 @@ def execute():
     info('****************************************************************************************************')
 
     info('1) Copy files and prepare renaming...')
-    oldNamespace = oldNamespace.replace('/', '#').lower()
-    newNamespace = newNamespace.replace('/', '#').lower()
+    newNamespace       = newNamespace.replace('/', '#').lower()
+    oldNamespaceObject = oldNamespace
+    oldNamespaceFile   = oldNamespace.replace('/', '#').lower()
 
     # Consider excluded files/development objects
     excludedObjectsFile = None
@@ -64,8 +65,8 @@ def execute():
                 fileName = fileSegments.group(1)
                 objectName = fileSegments.group(2)
                 fileExtension = fileSegments.group(3)        
-            if not re.search(f'(?i)\.bak', file) and re.search(rf'(?i)({oldNamespace}|{newNamespace})', file):
-                newFilename = re.sub(f'(?i){oldNamespace}', newNamespace, fileName)
+            if not re.search(f'(?i)\.bak', file) and re.search(rf'(?i)({oldNamespaceFile}|{newNamespace})', file):
+                newFilename = re.sub(f'(?i){oldNamespaceFile}', newNamespace, fileName)
                 if excludedObjectsFile is None or not (re.search(rf'(?i){fileName}', excludedObjects)):
                     filesToRename.append([filePath, fileName, fileExtension, objectName])
                     files.append([filePath, newFilename, fileExtension, objectName])
@@ -85,9 +86,9 @@ def execute():
         newFilename = ''
         newObjectName = ''
 
-        if re.search(f'(?i){oldNamespace}', fileName):
-            newFilename = re.sub(f'(?i){oldNamespace}', newNamespace, fileName)
-            newObjectName = re.sub(f'(?i){oldNamespace}', newNamespace, objectName)
+        if re.search(f'(?i){oldNamespaceFile}', fileName):
+            newFilename = re.sub(f'(?i){oldNamespaceFile}', newNamespace, fileName)
+            newObjectName = re.sub(f'(?i){oldNamespaceFile}', newNamespace, objectName)
             oldFilepath = os.path.join(filePath, fileName + fileExtension)
             newFilepath = os.path.join(filePath, newFilename + fileExtension)
 
@@ -114,9 +115,9 @@ def execute():
                 except BaseException:
                     continue
 
-                content_new = re.sub(f'(?i){oldNamespace}', lambda m: replace(m, oldNamespace, newNamespace), content, flags = re.MULTILINE)
+                content_new = re.sub(f'(?i){oldNamespaceObject}', lambda m: replace(m, oldNamespaceObject, newNamespace), content, flags = re.MULTILINE)
                 if content != content_new:
-                    info(f'>> Occurrences of "{oldNamespace}" replaced by "{newNamespace}" in {filePath}')
+                    info(f'>> Occurrences of "{oldNamespaceObject}" replaced by "{newNamespace}" in {filePath}')
                     f.seek(0)
                     f.write(content_new)
                     f.truncate()
@@ -124,7 +125,7 @@ def execute():
     info('\n\n5) Renaming directories...')
     for filePath, dirnames, filenames in os.walk(newPathToGitFolder, topdown = False):
         for dir in dirnames:
-            newDir = re.sub(f'(?i){oldNamespace}', newNamespace, dir)
+            newDir = re.sub(f'(?i){oldNamespaceFile}', newNamespace, dir)
             oldDirpath = os.path.join(filePath, dir)
             newDirpath = os.path.join(filePath, newDir)        
             try:
@@ -139,7 +140,7 @@ def execute():
         shutil.copytree(newPathToGitFolder, pathToGitFolder, dirs_exist_ok=True)
         shutil.rmtree(newPathToGitFolder)
 
-    info(f'\nRenaming {oldNamespace} => {newNamespace} was successful.\n')
+    info(f'\nRenaming {oldNamespaceFile} / {oldNamespaceObject} => {newNamespace} was successful.\n')
     return True
 
 runApp = True

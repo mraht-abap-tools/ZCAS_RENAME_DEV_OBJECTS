@@ -1,10 +1,10 @@
 *&---------------------------------------------------------------------*
-*& Report /SCWM/R_FOOBAR
+*& Report #CAS#EWM_R_FOOBAR
 *&---------------------------------------------------------------------*
 *&
 *&---------------------------------------------------------------------*
-REPORT /SCWM/R_FOOBAR.
+REPORT #CAS#EWM_R_FOOBAR.
 
-SELECT * FROM /SCWM/T_TEST INTO TABLE DATA(lt_test_data).
+SELECT * FROM #CAS#EWM_T_TEST INTO TABLE DATA(lt_test_data).
 
 BREAK-POINT.

@@ -1,4 +1,8 @@
 # Version: 18.10.2022-001
+#
+# TODO:
+# - [NEW] FUGR: In case of new namespace with '/', prefixes 'L' or 'SAPL' have to be set after the last '/' of the new namespace,
+#               e.g. 'LZIAL_T_CNF_VARF00 => #CAS#LEWM_T_CNF_VARF00, not L#CAS#EWM_T_CNF_VARF00
 
 import logging
 import os

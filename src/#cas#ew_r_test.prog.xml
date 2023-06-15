@@ -3,24 +3,20 @@
  <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
   <asx:values>
    <PROGDIR>
-    <NAME>#CAS#EWM_R_FOOBAR</NAME>
+    <NAME>/CAS/EW_R_TEST</NAME>
+    <DBAPL>S</DBAPL>
     <SUBC>1</SUBC>
-    <RLOAD>D</RLOAD>
     <FIXPT>X</FIXPT>
+    <LDBNAME>D$S</LDBNAME>
     <UCCHECK>X</UCCHECK>
    </PROGDIR>
-   <I18N_TPOOL>
+   <TPOOL>
     <item>
-     <LANGUAGE>D</LANGUAGE>
-     <TEXTPOOL>
-      <item>
-       <ID>R</ID>
-       <ENTRY>#CAS#EWM_R_FOOBAR</ENTRY>
-       <LENGTH>7</LENGTH>
-      </item>
-     </TEXTPOOL>
+     <ID>R</ID>
+     <ENTRY>Test report</ENTRY>
+     <LENGTH>11</LENGTH>
     </item>
-   </I18N_TPOOL>
+   </TPOOL>
   </asx:values>
  </asx:abap>
 </abapGit>

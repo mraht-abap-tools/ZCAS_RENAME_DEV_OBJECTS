@@ -1,10 +1,10 @@
 *&---------------------------------------------------------------------*
-*& Report #CAS#EWM_R_FOOBAR
+*& Report /cas/ew_r_test
 *&---------------------------------------------------------------------*
 *&
 *&---------------------------------------------------------------------*
-REPORT #CAS#EWM_R_FOOBAR.
+REPORT /cas/ew_r_test.
 
-SELECT * FROM #CAS#EWM_T_TEST INTO TABLE DATA(lt_test_data).
+SELECT * FROM /CAS/EW_T_TEST INTO TABLE @DATA(lt_test_data).
 
 BREAK-POINT.

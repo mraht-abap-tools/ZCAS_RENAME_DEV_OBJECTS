@@ -21,20 +21,55 @@ def replace(m, oldNamespace, newNamespace):
     newStr = re.sub(oldNamespace, newNamespace, m.group(), flags = re.IGNORECASE)
     return newStr.lower() if m.group().islower() else newStr.upper()
 
+def inputPathToGitFolder():
+    pathToGitFolder = ''
+    while pathToGitFolder == '':
+        pathToGitFolder = input("Path to abapGit repo: ")
+        if pathToGitFolder == 'quit' or pathToGitFolder == 'exit':
+            exit()
+        elif not os.path.isdir(pathToGitFolder + "\\src"):
+            pathToGitFolder = ''
+            print("Entered folder doesn't exist or isn't an abapGit repository.")
+    return pathToGitFolder
+
+def inputOldNamespace():
+    oldNamespace = ''
+    while oldNamespace == '':
+        oldNamespace = input("Old namespace: ")
+        if oldNamespace == 'quit' or oldNamespace == 'exit':
+            exit()
+    return oldNamespace
+
+def inputNewNamespace(oldNamespace):
+    newNamespace = ''
+    while newNamespace == '':
+        newNamespace = input("New namespace: ")
+        if newNamespace == 'quit' or newNamespace == 'exit':
+            exit()
+        elif newNamespace == oldNamespace:
+            newNamespace = ''
+            print("Entered new namespace is not different from old namespace.")
+    return newNamespace
+
+def inputOverwrite():
+    overwrite = ''
+    while overwrite == '':
+        overwrite = input("Overwrite existing files (y/n)? ")
+        if overwrite == 'quit' or overwrite == 'exit':
+            exit()
+        elif not re.search('(?i)^[jyn]+$', overwrite):
+            overwrite = ''
+            print("Please enter 'y' or 'n'.")
+    return overwrite
+
 def execute():
     info('************************************* ZCAS_RENAME_DEV_OBJECTS **************************************')
     print(f"Enter 'quit' or 'STRG+C' to quit\n")
-    pathToGitFolder = input("Path to abapGit repo: ")
-    while not os.path.isdir(pathToGitFolder + "\\src") and not pathToGitFolder == 'quit':
-        print("Entered folder doesn't exist or isn't an abapGit repository.")
-        pathToGitFolder = input("Path to abapGit repo: ")
-    if pathToGitFolder == 'quit': return False
-    oldNamespace = input("Old namespace: ")
-    if oldNamespace == 'quit': return False
-    newNamespace = input("New namespace: ")
-    if newNamespace == 'quit': return False
-    overwrite = input("Overwrite (y/n)? ")
-    if overwrite == 'quit': return False
+
+    pathToGitFolder = inputPathToGitFolder()
+    oldNamespace    = inputOldNamespace()
+    newNamespace    = inputNewNamespace(oldNamespace)
+    overwrite       = inputOverwrite()
 
     logging.basicConfig(level=logging.DEBUG, filename="log.txt", filemode="a+",
                         format="%(asctime)-15s %(levelname)-8s %(message)s")
@@ -64,19 +99,36 @@ def execute():
 
     for filePath, dirnames, filenames in os.walk(newPathToGitFolder):
         for file in filenames:
-            fileSegments = re.search(f'^(([\w#]+)[\.\w#\s]+)(\..+)$',file)
+            fileSegments = re.search(f'^(([\w#]+)[\.\w#\s]+)(\..+)$', file)
+            ##fileSegments = re.search(f'^([\w#]+)(\.fugr\.([\w#]+))?(\..+)$', file)
             if fileSegments is not None:
                 fileName = fileSegments.group(1)
                 objectName = fileSegments.group(2)
-                fileExtension = fileSegments.group(3)        
+                fileExtension = fileSegments.group(3)
+
             if not re.search(f'(?i)\.bak', file) and re.search(rf'(?i)({oldNamespaceFile}|{newNamespace})', file):
-                newFilename = re.sub(f'(?i){oldNamespaceFile}', newNamespace, fileName)
+                
+                sapObjectSegments = re.search(f'(?i)(\.fugr\.)(#?[\w]+#?(SAPL|L)\w+)', file)
+                if sapObjectSegments != None:
+                    sapObjectName   = sapObjectSegments.group(2)
+                    sapObjectPrefix = sapObjectSegments.group(3)
+                    t1 = sapObjectSegments.start(3)
+                    t2 = sapObjectSegments.end(3)
+                    ##TODO Split and concentenate string
+                    if '#' in sapObjectName:
+                        newSAPObjectName = re.sub(f'(?i){sapObjectName}', newNamespace, fileName)
+                    else:
+                        newSAPObjectName = re.sub(f'(?i){sapObjectName}', newNamespace, fileName)
+                    newFilename = re.sub(f'(?i){oldNamespaceFile}', newNamespace, fileName)
+                else:
+                    newFilename = re.sub(f'(?i){oldNamespaceFile}', newNamespace, fileName)
+
                 if excludedObjectsFile is None or not (re.search(rf'(?i){fileName}', excludedObjects)):
                     filesToRename.append([filePath, fileName, fileExtension, objectName])
                     files.append([filePath, newFilename, fileExtension, objectName])
                 else:
-                    info(f'Exclude {fileName} and {newFilename} from renaming')
-                    newFilename = fileName
+                    info(f'Excluded {fileName} and {newFilename} from renaming')
+                    ##Obsolete? newFilename = fileName
             else:
                 files.append([filePath, fileName, fileExtension, objectName])
 
@@ -87,8 +139,8 @@ def execute():
         fileExtension = file[2]
         objectName = file[3]
 
-        newFilename = ''
-        newObjectName = ''
+        newFilename    = ''
+        newObjectName  = ''
 
         if re.search(f'(?i){oldNamespaceFile}', fileName):
             newFilename = re.sub(f'(?i){oldNamespaceFile}', newNamespace, fileName)
@@ -107,7 +159,7 @@ def execute():
         elif re.search(f'(?i){newNamespace}', fileName):
             newFilename = fileName
 
-    info('\n4) Renaming occurrences within files...')
+    info('\n5) Renaming occurrences within files...')
     for index, file in enumerate(files):
         print('%-50s' % file[1] + f': {round((index / len(files)) * 100, 2)}%',"\r", end=' ')
         filePath = os.path.join(file[0], file[1] + file[2])
@@ -126,7 +178,7 @@ def execute():
                     f.write(content_new)
                     f.truncate()
 
-    info('\n\n5) Renaming directories...')
+    info('\n\n6) Renaming directories...')
     for filePath, dirnames, filenames in os.walk(newPathToGitFolder, topdown = False):
         for dir in dirnames:
             newDir = re.sub(f'(?i){oldNamespaceFile}', newNamespace, dir)
@@ -139,7 +191,7 @@ def execute():
                 error(f'Error: Renaming {dir} to {newDir} failed.')
 
     if overwrite == 'y':
-        info('\n6) Overwrite files and directories...')
+        info('\n7) Overwrite files and directories...')
         shutil.rmtree(pathToGitFolder)
         shutil.copytree(newPathToGitFolder, pathToGitFolder, dirs_exist_ok=True)
         shutil.rmtree(newPathToGitFolder)

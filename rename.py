@@ -50,7 +50,7 @@ def inputNewNamespace(oldNamespace):
 def inputOverwrite():
     overwrite = ''
     while overwrite == '':
-        overwrite = input("Overwrite existing files (y/n)? ")
+        overwrite = input("Overwrite existing filesToRename (y/n)? ")
         if overwrite == 'quit' or overwrite == 'exit':
             exit()
         elif not re.search('(?i)^[jyn]+$', overwrite):
@@ -72,115 +72,114 @@ def buildExcludeFiles():
 def copyFiles(pathToGitFolder, newPathToGitFolder):
     shutil.copytree(pathToGitFolder, newPathToGitFolder, dirs_exist_ok=True)
 
-def det_relevant_files(newPathToGitFolder, oldNamespaceFile, newNamespace, excludedObjects):
-    files = []
-    filesToRename = []
+def det_files_and_objects(newPathToGitFolder, oldNamespace, oldNamespaceFile, newNamespace, newNamespaceFile, excludedObjects):
+    filesToRename   = []
+    objectsToRename = []
 
     for filePath, dirnames, filenames in os.walk(newPathToGitFolder):
         for file in filenames:
             fileSegments = re.search(f'^(([\w#]+)[\.\w#\s]+)(\..+)$', file)
-            ##fileSegments = re.search(f'^([\w#]+)(\.fugr\.([\w#]+))?(\..+)$', file)
-            if fileSegments is not None:
-                fileName = fileSegments.group(1)
-                objectName = fileSegments.group(2)
-                fileExtension = fileSegments.group(3)
+            if fileSegments is None:
+                continue
 
-            newFilename = ''
-            if not re.search(f'(?i)\.bak', file) and re.search(rf'(?i)({oldNamespaceFile}|{newNamespace})', file):
+            fileName         = fileSegments.group(1)
+            newFilename      = fileName
+            fileExtension    = fileSegments.group(3)
 
-                sapObjectSegments = re.search(f'(?i)([#\w]+)\.fugr\.((#\w+#)?(L|SAPL)(\w+))', fileName)
-                if sapObjectSegments != None:
-                    sapObjectName        = sapObjectSegments.group(1)
+            if excludedObjects is not None and re.search(rf'(?i){fileName}', excludedObjects):
+                info(f'Excluded {fileName} from processing')
+                continue
 
-                    sapSubobjectName     = sapObjectSegments.group(2)
-                    sapSubobjectNameI1   = sapObjectSegments.start(2)
-                    sapSubobjectNameI2   = sapObjectSegments.end(2)
+            if re.search(f'(?i)\.bak', file) or not re.search(rf'(?i)({oldNamespaceFile}|{newNamespaceFile})', file):
+                filesToRename.append([False, filePath, fileName, newFilename, fileExtension])
+                continue
+                
+            oldTopObjectName = ''
+            newTopObjectName = ''
 
-                    sapSubobjectNamespace   = sapObjectSegments.group(3)
-                    sapSubobjectNamespaceI1 = sapObjectSegments.start(3)
-                    sapSubobjectNamespaceI2 = sapObjectSegments.end(3)
-
-                    sapObjectPrefix   = sapObjectSegments.group(4)
-                    sapObjectPrefixI1 = sapObjectSegments.start(4)
-                    sapObjectPrefixI2 = sapObjectSegments.end(4)
-                    
-                    if     '#'     in sapSubobjectName and '#' not in newNamespace \
-                        or '#' not in sapSubobjectName and '#'     in newNamespace:
-                        newFilename = fileName[:sapObjectPrefixI1] + fileName[sapObjectPrefixI2:]
-                        
-                        if '#' in sapSubobjectName and '#' not in newNamespace:
-                            ## Renaming from '/' to '[A-Z]'
-                            newFilename = newFilename[:sapSubobjectNameI1] + sapObjectPrefix + newFilename[sapSubobjectNameI1:]
-                        else:
-                            ## Renaming from '[A-Z]' to '/'
-                            newFilename = newFilename[:sapSubobjectNamespaceI1] + sapObjectPrefix + newFilename[sapSubobjectNamespaceI1:]
-
-                        newFilename = re.sub(f'(?i){oldNamespaceFile}', newNamespace, newFilename)
-
-                if newFilename == '':
-                    newFilename = re.sub(f'(?i){oldNamespaceFile}', newNamespace, fileName)
-
-                if excludedObjects is None or not (re.search(rf'(?i){fileName}', excludedObjects)):
-                    filesToRename.append([filePath, fileName, fileExtension, objectName])
-                    if [filePath, newFilename, fileExtension, objectName] not in files:
-                        files.append([filePath, newFilename, fileExtension, objectName])
+            sapObjectSegments = re.search(f'(?i)({oldNamespaceFile}(\w+)\.fugr\.){oldNamespaceFile}((L|SAPL)(\w+))', fileName)
+            if sapObjectSegments != None:
+                topObjectName   = sapObjectSegments.group(2)
+                sapObjectPrefix = sapObjectSegments.group(4)
+                
+                if '#' in oldNamespaceFile and '#' not in newNamespaceFile:
+                    ## Renaming from '/' to '[A-Z]'
+                    oldTopObjectName = oldNamespaceFile + sapObjectPrefix + topObjectName
+                    newTopObjectName = sapObjectPrefix + newNamespaceFile + topObjectName
                 else:
-                    info(f'Excluded {fileName} and {newFilename} from renaming')
+                    ## Renaming from '[A-Z]' to '/'
+                    oldTopObjectName = sapObjectPrefix + oldNamespaceFile + topObjectName
+                    newTopObjectName = newNamespaceFile + sapObjectPrefix + topObjectName
+            
+            if oldTopObjectName != '' and newTopObjectName != '':
+                newFilename = re.sub(f'(?i){oldTopObjectName}', newTopObjectName, newFilename)
 
-            else:
-                files.append([filePath, fileName, fileExtension, objectName])
+                oldTopObjectName = oldTopObjectName.replace('#', '/')
+                newTopObjectName = newTopObjectName.replace('#', '/')
+                object = [oldTopObjectName, newTopObjectName]
+                if object not in objectsToRename:
+                    objectsToRename.append(object)
 
-    return files, filesToRename
+            newFilename = re.sub(f'(?i){oldNamespaceFile}', newNamespaceFile, newFilename)
+            fileToRename = [True, filePath, fileName, newFilename, fileExtension]
+            if fileToRename not in filesToRename:
+                filesToRename.append(fileToRename)
+ 
+    objectsToRename.append([oldNamespace, newNamespace])
 
-def rename_files(filesToRename, oldNamespaceFile, newNamespace):
-    for file in filesToRename:
-        filePath      = file[0]
-        fileName      = file[1]
-        fileExtension = file[2]
-        objectName    = file[3]
+    return filesToRename, objectsToRename
 
-        newFilename    = ''
-        newObjectName  = ''
+def rename_files(filesToRename, oldNamespaceFile):
+    for file in filesToRename: 
+        if file[0] == False:
+            continue
+
+        filePath      = file[1]
+        fileName      = file[2]
+        newFilename   = file[3]
+        fileExtension = file[4]
 
         if re.search(f'(?i){oldNamespaceFile}', fileName):
-            newFilename = re.sub(f'(?i){oldNamespaceFile}', newNamespace, fileName)
-            newObjectName = re.sub(f'(?i){oldNamespaceFile}', newNamespace, objectName)
-            oldFilepath = os.path.join(filePath, fileName + fileExtension)
+            oldFilepath = os.path.join(filePath, fileName    + fileExtension)
             newFilepath = os.path.join(filePath, newFilename + fileExtension)
 
             try:
                 shutil.move(oldFilepath, newFilepath)
-                file[1] = newFilename
-                file[4] = newObjectName
                 info(f'{fileName}{fileExtension} => {newFilename}{fileExtension}')
             except BaseException:
                 error(f'Error: Renaming {fileName} to {newFilename} failed.')
-            
-        elif re.search(f'(?i){newNamespace}', fileName):
-            newFilename = fileName
 
     return filesToRename
 
-def rename_occurrences(files, oldNamespaceObject, newNamespace):
-    for index, file in enumerate(files):
-        print('%-50s' % file[1] + f': {round((index / len(files)) * 100, 2)}%',"\r", end=' ')
-        filePath = os.path.join(file[0], file[1] + file[2])
-        
+def rename_objects(filesToRename, objectsToRename, oldNamespaceObject, newNamespace):
+    for index, file in enumerate(filesToRename):
+        print('%-50s' % file[3] + f': {round((index / (len(filesToRename) * len(objectsToRename))) * 100, 2)}%',"\r", end=' ')
+        filePath = os.path.join(file[1], file[3] + file[4])
+
         if os.path.exists(filePath):
             with open (filePath, 'r+', encoding="utf8") as f:
                 try:
                     content = f.read()
-                except BaseException:
-                    continue
+                    newContent = content
 
-                ##TODO Test
-                content_new = re.sub(f'{oldNamespaceObject}', lambda m: replace(m, oldNamespaceObject, newNamespace), content, flags = re.MULTILINE)
-                content_new = re.sub(f'{file[3]}', lambda m: replace(m, file[3], file[4]), content, flags = re.MULTILINE)
-                if content != content_new:
-                    info(f'>> Occurrences of "{oldNamespaceObject}" replaced by "{newNamespace}" in {filePath}')
-                    f.seek(0)
-                    f.write(content_new)
-                    f.truncate()
+                    for object in objectsToRename:
+                        oldObject = object[0]
+                        newObject = object[1]
+                        
+                        tmpContent = re.sub(f'(?i){oldObject}', lambda m: replace(m, oldObject, newObject), newContent, flags = re.MULTILINE)
+                        if tmpContent != newContent:
+                            info(f'>> Occurrences of "{oldObject}" replaced by "{newObject}" in {filePath}')
+                        newContent = tmpContent
+                
+                    if content != newContent:
+                        f.seek(0)
+                        f.write(newContent)
+                        f.truncate()
+
+                except BaseException:
+                    error(f'Error: Renaming objects in file {filePath} failed.')
+
+    info(f'\n')
 
 def rename_directories(pathToGitFolder, newPathToGitFolder, oldNamespaceFile, newNamespace, overwrite):
     for filePath, dirnames, filenames in os.walk(newPathToGitFolder, topdown = False):
@@ -194,11 +193,13 @@ def rename_directories(pathToGitFolder, newPathToGitFolder, oldNamespaceFile, ne
             except BaseException:
                 error(f'Error: Renaming {dir} to {newDir} failed.')
 
-    if overwrite == 'y':
-        info('\n6) Overwrite files and directories...')
+def overwrite_files(overwrite, pathToGitFolder, newPathToGitFolder):
+    if overwrite == True:
         shutil.rmtree(pathToGitFolder)
         shutil.copytree(newPathToGitFolder, pathToGitFolder, dirs_exist_ok=True)
         shutil.rmtree(newPathToGitFolder)
+    else:
+        info(f'=> User turned overwriting off.')
 
 def execute():
     logging.basicConfig(level=logging.DEBUG, filename="log.txt", filemode="a+",
@@ -220,20 +221,23 @@ def execute():
 
     info('****************************************************************************************************')
 
-    info('1) Copy files and prepare renaming...')
+    info(f'1) Copy files and prepare renaming...')
     copyFiles(pathToGitFolder, newPathToGitFolder)
 
-    info('\n2) Determine relevant files...')
-    files, filesToRename = det_relevant_files(newPathToGitFolder, oldNamespaceFile, newNamespaceFile, excludedObjects)
+    info(f'\n2) Determine new names...')
+    filesToRename, objectsToRename = det_files_and_objects(newPathToGitFolder, oldNamespace, oldNamespaceFile, newNamespace, newNamespaceFile, excludedObjects)
 
-    info('\n3) Renaming files...')
-    filesToRename = rename_files(filesToRename, oldNamespaceFile, newNamespaceFile)
+    info(f'\n3) Renaming files...')
+    filesToRename = rename_files(filesToRename, oldNamespaceFile)
 
-    info('\n4) Renaming occurrences within files...')
-    rename_occurrences(files, oldNamespace, newNamespace)
+    info(f'\n4) Renaming objects within files...')
+    rename_objects(filesToRename, objectsToRename, oldNamespace, newNamespace)
 
-    info('\n\n5) Renaming directories...')
+    info(f'\n5) Renaming directories...')
     rename_directories(pathToGitFolder, newPathToGitFolder, oldNamespaceFile, newNamespaceFile, overwrite)
+
+    info(f'\n6) Overwrite files and directories...')
+    overwrite_files(overwrite, pathToGitFolder, newPathToGitFolder)
 
     info(f'\nRenaming \'{oldNamespace}\' (\'{oldNamespaceFile}\')  =>  \'{newNamespace}\' (\'{newNamespaceFile}\') was successful.\n')
     return True

@@ -91,9 +91,14 @@ def det_relevant_files(newPathToGitFolder, oldNamespaceFile, newNamespace, exclu
                 sapObjectSegments = re.search(f'(?i)([#\w]+)\.fugr\.((#\w+#)?(L|SAPL)(\w+))', fileName)
                 if sapObjectSegments != None:
                     sapObjectName        = sapObjectSegments.group(1)
+
                     sapSubobjectName     = sapObjectSegments.group(2)
                     sapSubobjectNameI1   = sapObjectSegments.start(2)
                     sapSubobjectNameI2   = sapObjectSegments.end(2)
+
+                    sapSubobjectNamespace   = sapObjectSegments.group(3)
+                    sapSubobjectNamespaceI1 = sapObjectSegments.start(3)
+                    sapSubobjectNamespaceI2 = sapObjectSegments.end(3)
 
                     sapObjectPrefix   = sapObjectSegments.group(4)
                     sapObjectPrefixI1 = sapObjectSegments.start(4)
@@ -103,18 +108,25 @@ def det_relevant_files(newPathToGitFolder, oldNamespaceFile, newNamespace, exclu
                         or '#' not in sapSubobjectName and '#'     in newNamespace:
                         newFilename = fileName[:sapObjectPrefixI1] + fileName[sapObjectPrefixI2:]
                         
-                        newFilename = newFilename[:sapSubobjectNameI1] + sapObjectPrefix + newFilename[sapSubobjectNameI1:]
+                        if '#' in sapSubobjectName and '#' not in newNamespace:
+                            ## Renaming from '/' to '[A-Z]'
+                            newFilename = newFilename[:sapSubobjectNameI1] + sapObjectPrefix + newFilename[sapSubobjectNameI1:]
+                        else:
+                            ## Renaming from '[A-Z]' to '/'
+                            newFilename = newFilename[:sapSubobjectNamespaceI1] + sapObjectPrefix + newFilename[sapSubobjectNamespaceI1:]
+
                         newFilename = re.sub(f'(?i){oldNamespaceFile}', newNamespace, newFilename)
-                
+
                 if newFilename == '':
                     newFilename = re.sub(f'(?i){oldNamespaceFile}', newNamespace, fileName)
 
                 if excludedObjects is None or not (re.search(rf'(?i){fileName}', excludedObjects)):
                     filesToRename.append([filePath, fileName, fileExtension, objectName])
-                    files.append([filePath, newFilename, fileExtension, objectName])
+                    if [filePath, newFilename, fileExtension, objectName] not in files:
+                        files.append([filePath, newFilename, fileExtension, objectName])
                 else:
                     info(f'Excluded {fileName} and {newFilename} from renaming')
-                    ##Obsolete? newFilename = fileName
+
             else:
                 files.append([filePath, fileName, fileExtension, objectName])
 
@@ -161,6 +173,7 @@ def rename_occurrences(files, oldNamespaceObject, newNamespace):
                 except BaseException:
                     continue
 
+                ##TODO Test
                 content_new = re.sub(f'{oldNamespaceObject}', lambda m: replace(m, oldNamespaceObject, newNamespace), content, flags = re.MULTILINE)
                 content_new = re.sub(f'{file[3]}', lambda m: replace(m, file[3], file[4]), content, flags = re.MULTILINE)
                 if content != content_new:

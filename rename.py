@@ -60,6 +60,7 @@ def inputOverwrite():
         elif not re.search('(?i)^[jyn]+$', overwrite):
             overwrite = ''
             print("Please enter 'y' or 'n'.")
+    overwrite = False if re.search('(?i)n', overwrite) else True
     return overwrite
 
 def buildExcludeFiles():
@@ -188,7 +189,7 @@ def rename_objects(filesToRename, objectsToRename):
 def rename_directories(pathToGitFolder, oldNamespace, newNamespace):
     for filePath, dirnames, filenames in os.walk(pathToGitFolder[1], topdown = False):
         for dir in dirnames:
-            newDir = re.sub(f'(?i){oldNamespace[1]}', newNamespace, dir)
+            newDir = re.sub(f'(?i){oldNamespace[1]}', newNamespace[1], dir)
             oldDirpath = os.path.join(filePath, dir)
             newDirpath = os.path.join(filePath, newDir)        
             try:

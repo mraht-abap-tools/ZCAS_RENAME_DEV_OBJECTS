@@ -31,30 +31,48 @@ def inputPathToGitFolder():
     return pathToGitFolder
 
 def inputOldNamespace():
-    oldNamespace = ['', '']
+    ## [0] = object namespace   e.g. '/sap/'
+    ## [1] = file namespace     e.g. '#sap#'
+    ## [2] = suffix             e.g. '_' >>> in total: '/sap/_'
+    oldNamespace = ['', '', '']
     while oldNamespace[0] == '':
-        oldNamespace[0] = input("Old namespace: ").lower()
+        oldNamespace[0] = input("Old namespace: ").replace('#', '/').lower()
         if oldNamespace[0] == 'quit' or oldNamespace[0] == 'exit':
             exit()
+
     oldNamespace[1] = oldNamespace[0].replace('/', '#')
+
+    oldNamespace[2] = input("Old suffix after namespace: ").lower()
+    if oldNamespace[2] == 'quit' or oldNamespace[2] == 'exit':
+        exit()
+
     return oldNamespace
 
 def inputNewNamespace(oldNamespace):
-    newNamespace = ['', '']
+    ## [0] = object namespace   e.g. '/sap/'
+    ## [1] = file namespace     e.g. '#sap#'
+    ## [2] = suffix             e.g. '_' >>> in total: '/sap/_'
+    newNamespace = ['', '', '']
     while newNamespace[0] == '':
-        newNamespace[0] = input("New namespace: ").lower()
+        newNamespace[0] = input("New namespace: ").replace('#', '/').lower()
         if newNamespace[0] == 'quit' or newNamespace[0] == 'exit':
             exit()
         elif newNamespace[0] == oldNamespace[0]:
             newNamespace[0] = ''
             print("Entered new namespace is not different from old namespace.")
+
     newNamespace[1] = newNamespace[0].replace('/', '#')
+
+    newNamespace[2] = input("New suffix after namespace: ").lower()
+    if newNamespace[2] == 'quit' or newNamespace[2] == 'exit':
+        exit()
+
     return newNamespace
 
 def inputOverwrite():
     overwrite = ''
     while overwrite == '':
-        overwrite = input("Overwrite existing filesToRename (y/n)? ")
+        overwrite = input("Overwrite existing files (y/n)? ")
         if overwrite == 'quit' or overwrite == 'exit':
             exit()
         elif not re.search('(?i)^[jyn]+$', overwrite):
@@ -99,38 +117,42 @@ def det_files_and_objects(pathToGitFolder, oldNamespace, newNamespace, excludedO
                 filesToRename.append([False, filePath, fileName, newFilename, fileExtension])
                 continue
                 
-            oldTopObjectName = ''
-            newTopObjectName = ''
+            totalOldTopObjectName = ''
+            totalNewTopObjectName = ''
 
             sapObjectSegments = re.search(f'(?i)({oldNamespace[1]}(\w+)\.fugr\.){oldNamespace[1]}((L|SAPL)(\w+))', fileName)
             if sapObjectSegments != None:
                 topObjectName   = sapObjectSegments.group(2)
                 sapObjectPrefix = sapObjectSegments.group(4)
                 
-                if '#' in oldNamespace[1] and '#' not in newNamespace[1]:
+                newTopObjectName = topObjectName
+                if oldNamespace[2] != '':
+                    newTopObjectName = re.sub(f'(?i){oldNamespace[2]}', newNamespace[2], topObjectName)
+
+                if '#' in oldNamespace[1] + oldNamespace[2] and '#' not in newNamespace[1] + newNamespace[2]:
                     ## Renaming from '/' to '[A-Z]'
-                    oldTopObjectName = oldNamespace[1] + sapObjectPrefix + topObjectName
-                    newTopObjectName = sapObjectPrefix + newNamespace[1] + topObjectName
+                    totalOldTopObjectName = oldNamespace[1] + sapObjectPrefix + topObjectName
+                    totalNewTopObjectName = sapObjectPrefix + newNamespace[1] + newTopObjectName
                 else:
                     ## Renaming from '[A-Z]' to '/'
-                    oldTopObjectName = sapObjectPrefix + oldNamespace[1] + topObjectName
-                    newTopObjectName = newNamespace[1] + sapObjectPrefix + topObjectName
+                    totalOldTopObjectName = sapObjectPrefix + oldNamespace[1] + topObjectName
+                    totalNewTopObjectName = newNamespace[1] + sapObjectPrefix + newTopObjectName
             
-            if oldTopObjectName != '' and newTopObjectName != '':
-                newFilename = re.sub(f'(?i){oldTopObjectName}', newTopObjectName, newFilename)
+            if totalOldTopObjectName != '' and totalNewTopObjectName != '':
+                newFilename = re.sub(f'(?i){totalOldTopObjectName}', totalNewTopObjectName, newFilename)
 
-                oldTopObjectName = oldTopObjectName.replace('#', '/')
-                newTopObjectName = newTopObjectName.replace('#', '/')
-                object = [oldTopObjectName, newTopObjectName]
+                totalOldTopObjectName = totalOldTopObjectName.replace('#', '/')
+                totalNewTopObjectName = totalNewTopObjectName.replace('#', '/')
+                object = [totalOldTopObjectName, totalNewTopObjectName]
                 if object not in objectsToRename:
                     objectsToRename.append(object)
 
-            newFilename = re.sub(f'(?i){oldNamespace[1]}', newNamespace[1], newFilename)
+            newFilename = re.sub(f'(?i){oldNamespace[1] + oldNamespace[2]}', newNamespace[1] + newNamespace[2], newFilename)
             fileToRename = [True, filePath, fileName, newFilename, fileExtension]
             if fileToRename not in filesToRename:
                 filesToRename.append(fileToRename)
  
-    objectsToRename.append([oldNamespace[0], newNamespace[0]])
+    objectsToRename.append([oldNamespace[0] + oldNamespace[2], newNamespace[0] + newNamespace[2]])
 
     return filesToRename, objectsToRename
 
@@ -144,7 +166,7 @@ def rename_files(filesToRename, oldNamespace):
         newFilename   = file[3]
         fileExtension = file[4]
 
-        if re.search(f'(?i){oldNamespace[1]}', fileName):
+        if re.search(f'(?i){oldNamespace[1] + oldNamespace[2]}', fileName):
             oldFilepath = os.path.join(filePath, fileName    + fileExtension)
             newFilepath = os.path.join(filePath, newFilename + fileExtension)
 
@@ -186,10 +208,10 @@ def rename_objects(filesToRename, objectsToRename):
 
     info(f'\n')
 
-def rename_directories(pathToGitFolder, oldNamespace, newNamespace):
+def rename_directories(pathToGitFolder, oldNamespace, newNamespace):    
     for filePath, dirnames, filenames in os.walk(pathToGitFolder[1], topdown = False):
         for dir in dirnames:
-            newDir = re.sub(f'(?i){oldNamespace[1]}', newNamespace[1], dir)
+            newDir = re.sub(f'(?i){oldNamespace[1] + oldNamespace[2]}', newNamespace[1] + newNamespace[2], dir)
             oldDirpath = os.path.join(filePath, dir)
             newDirpath = os.path.join(filePath, newDir)        
             try:
@@ -213,10 +235,10 @@ def execute():
     info('************************************* ZCAS_RENAME_DEV_OBJECTS **************************************')
     print(f"Enter 'quit' or 'STRG+C' to quit\n")
 
-    pathToGitFolder    = inputPathToGitFolder()
-    oldNamespace       = inputOldNamespace()
-    newNamespace       = inputNewNamespace(oldNamespace)
-    overwrite          = inputOverwrite()
+    pathToGitFolder = inputPathToGitFolder()
+    oldNamespace    = inputOldNamespace()
+    newNamespace    = inputNewNamespace(oldNamespace)
+    overwrite       = inputOverwrite()
 
     excludedObjects = buildExcludeFiles()
 
@@ -240,7 +262,7 @@ def execute():
     info(f'\n6) Overwrite files and directories...')
     overwrite_files(overwrite, pathToGitFolder)
 
-    info(f'\nRenaming \'{oldNamespace[0]}\' (\'{oldNamespace[1]}\')  =>  \'{newNamespace[0]}\' (\'{newNamespace[1]}\') was successful.\n')
+    info(f'\nRenaming \'{oldNamespace[0]}\' (\'{oldNamespace[1]}\') + \'{oldNamespace[2]}\'  =>  \'{newNamespace[0]}\' (\'{newNamespace[1]}\') + \'{newNamespace[2]}\' was successful.\n')
     return True
 
 runApp = True

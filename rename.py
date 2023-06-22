@@ -1,4 +1,4 @@
-# Version: 20.06.2023-001
+# Version: 22.06.2023-001
 
 import logging
 import os
@@ -93,6 +93,7 @@ def buildExcludeFiles():
     return excludedObjects
 
 def copyFiles(pathToGitFolder):
+    shutil.rmtree(pathToGitFolder[1], ignore_errors=True)
     shutil.copytree(pathToGitFolder[0], pathToGitFolder[1], dirs_exist_ok=True)
 
 def det_files_and_objects(pathToGitFolder, oldNamespace, newNamespace, excludedObjects):
@@ -148,11 +149,13 @@ def det_files_and_objects(pathToGitFolder, oldNamespace, newNamespace, excludedO
                     objectsToRename.append(object)
 
             newFilename = re.sub(f'(?i){oldNamespace[1] + oldNamespace[2]}', newNamespace[1] + newNamespace[2], newFilename)
+            newFilename = re.sub(f'(?i){oldNamespace[1]}', newNamespace[1], newFilename)
             fileToRename = [True, filePath, fileName, newFilename, fileExtension]
             if fileToRename not in filesToRename:
                 filesToRename.append(fileToRename)
  
     objectsToRename.append([oldNamespace[0] + oldNamespace[2], newNamespace[0] + newNamespace[2]])
+    objectsToRename.append([oldNamespace[0], newNamespace[0]])
 
     return filesToRename, objectsToRename
 
@@ -166,7 +169,7 @@ def rename_files(filesToRename, oldNamespace):
         newFilename   = file[3]
         fileExtension = file[4]
 
-        if re.search(f'(?i){oldNamespace[1] + oldNamespace[2]}', fileName):
+        if re.search(f'(?i){oldNamespace[1]}', fileName):
             oldFilepath = os.path.join(filePath, fileName    + fileExtension)
             newFilepath = os.path.join(filePath, newFilename + fileExtension)
 

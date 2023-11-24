@@ -83,13 +83,9 @@ def inputOverwrite():
 
 def buildExcludeFiles():
     excludedObjects     = None
-    excludedObjectsFile = None
     if os.path.exists('exclude.csv'):
-        excludedObjectsFile = open('exclude.csv', 'r')
-        excludedObjects = excludedObjectsFile.read()
-        excludedObjectsFile.close()
-        excludedObjects = excludedObjects.replace('/', '#').upper()
-
+        with open('exclude.csv', 'r', encoding="utf8") as f:
+            excludedObjects = f.read().split(';')
     return excludedObjects
 
 def copyFiles(pathToGitFolder):
@@ -110,7 +106,12 @@ def det_files_and_objects(pathToGitFolder, oldNamespace, newNamespace, excludedO
             newFilename      = fileName
             fileExtension    = fileSegments.group(3)
 
-            if excludedObjects is not None and re.search(rf'(?i){fileName}', excludedObjects):
+            exclude = False
+            for excludedObject in excludedObjects:
+                if excludedObject in fileName:
+                    exclude = True
+                    break
+            if exclude:
                 info(f'Excluded {fileName} from processing')
                 continue
 
